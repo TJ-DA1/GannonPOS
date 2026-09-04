@@ -6,7 +6,7 @@ from app import *
 clientid = "SHOP2"
 
 SERVER_IP = "0.0.0.0"
-PORT = 0000
+PORT = 2106
 
 def send_to_server(event):
     try:
