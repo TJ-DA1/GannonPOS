@@ -4,9 +4,9 @@ main_clientserver.py - A client server hybrid acting as a host for all auxiliary
 main_clientonly.py - A client running on all auxiliary systems - referred to as "client main"\
 app.py - Required in the same running directory as BOTH server main and client main. Contains the button layout of the system.\
 product.db - Required in the same running directory as server main. Contains all products and details.\
-lists/ and sales/ - Required in the same running directory of server main. Contains archive lists holding details about out of stock items and all sales.
+lists/ and sales/ - Required in the same running directory of server main. Contains archive lists holding details about out of stock items and all sales. These folders should be created manually.
 
-GannonPOS runs on Mac, Windows and (presumably) Linux. Requires Python 3.13 interpreter which will run on most modern / old machines. Client server connection requires all systems being on the same network.
+GannonPOS runs on Mac, Windows and (presumably) Linux. Requires Python 3.13 interpreter which will run on most modern / old machines. Client server connection requires all systems being on the same network. The program uses port 2106 by default. This can be changed but typically 2106 will be available.
 
 The system uses a simple client and server model to connect multiple points of service.\
 The client main should only be used on auxiliary computers and should only be booted when the server main is running.\
