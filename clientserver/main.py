@@ -299,7 +299,7 @@ def update_loop():
         eventqueue.clear()
 
     for event in events_to_process:
-        if event["clientid"] != clientid:
+        if (event["clientid"] != clientid) and (event["id"] not in ["connect", "disconnect"]):
             logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | CLIENT | Client {event["clientid"]} made a {str(event["id"]).upper()} request\n","client")
             logwindow.see(tk.END)
 
@@ -393,6 +393,18 @@ def update_loop():
                         response[event["clientid"]] = result
                         if event["clientid"] in response_events:
                             response_events[event["clientid"]].set()
+
+            case "connect":
+                logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | CLIENT | Client connected | Client identifier {event["clientid"]}\n", "client")
+                logwindow.see(tk.END)
+                with lock:
+                    response[event["clientid"]] = [True, clientid]
+                    if event["clientid"] in response_events:
+                        response_events[event["clientid"]].set()
+
+            case "disconnect":
+                logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | CLIENT | Client disconnected | Client identifier {event["clientid"]}\n","client")
+                logwindow.see(tk.END)
 
     root.after(50, update_loop)
 

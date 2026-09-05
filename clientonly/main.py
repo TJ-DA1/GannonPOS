@@ -178,6 +178,10 @@ def clearqueue(event):
     global itemqueue
     itemqueue = []
 
+def on_closing():
+    send_to_server({"clientid": clientid,"id": "disconnect","data": "","return": False})
+    root.destroy()
+
 logtext = f"{time.strftime("%H %M %S").replace(' ', ':')} | Welcome to GannonPOS terminal | Session identifier = {clientid}\n"
 root.title(f"GannonPOS Client")
 barcodeentry.bind(config["terminatescan"], onscan)
@@ -190,6 +194,15 @@ addstockbutton.configure(command = onaddstock)
 searchitembutton.configure(command = onsearchitem)
 
 logwindow.insert(tk.END, logtext)
+
+connected = send_to_server({"clientid": clientid,
+                            "id": "connect",
+                            "data": "",
+                            "return": True
+                            })
+
+logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | SERVER | Connected to server | Server identifier {connected[1]}\n", "client")
+logwindow.see(tk.END)
 
 def update_loop():
     global searchable, writable, values
@@ -235,5 +248,6 @@ def update_loop():
 
     root.after(50, update_loop)
 
+root.protocol("WM_DELETE_WINDOW", on_closing)
 update_loop()
 root.mainloop()
