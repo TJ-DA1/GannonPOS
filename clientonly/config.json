@@ -1,0 +1,7 @@
+{
+  "clientid" : "SHOP2",
+  "port": 2106,
+  "host": "0.0.0.0",
+  "terminatescan" : "<Return>",
+  "scantime" : 0.5
+}
