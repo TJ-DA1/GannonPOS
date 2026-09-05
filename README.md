@@ -1,12 +1,11 @@
 # GannonPOS
 # General info
-main_clientserver.py - A client server hybrid acting as a host for all auxiliary systems - referred to as "server main"\
-main_clientonly.py - A client running on all auxiliary systems - referred to as "client main"\
-app.py - Required in the same running directory as BOTH server main and client main. Contains the button layout of the system.\
-product.db - Required in the same running directory as server main. Contains all products and details.\
-lists/ and sales/ - Required in the same running directory of server main. Contains archive lists holding details about out of stock items and all sales. These folders should be created manually.
+GannonPOSServer - A client server hybrid acting as a host for all auxiliary systems - referred to as "server main"\
+GannonPOSClient - A client running on all auxiliary systems - referred to as "client main"\
+product.db - Required in the same running directory as server main. Will be created and configured on first run. Contains all products and details.\
+lists/ and sales/ - Required in the same running directory of server main. Will be created on first run. Contains archive lists holding details about out of stock items and all sales.
 
-GannonPOS runs on Mac, Windows and (presumably) Linux. Requires Python 3.13 interpreter which will run on most modern / old machines. Client server connection requires all systems being on the same network. The program uses port 2106 by default. This can be changed but typically 2106 will be available.
+GannonPOS runs on Mac, Windows and (presumably) Linux - releases have only been built for Windows, so other OSs will require manual building or just running source code. Client server connection requires all systems being on the same network. The program uses port 2106 by default. This can be changed in the config file but typically 2106 will be available.
 
 The system uses a simple client and server model to connect multiple points of service.\
 The client main should only be used on auxiliary computers and should only be booted when the server main is running.\
@@ -17,12 +16,19 @@ This project should not be used if the sales are confidential in anyway as the d
 
 # Connecting one client
 Run the server main on a computer with a known IP address on a LAN (typically on the same Wi-Fi connection or connected to the same router) with the client. Open command prompt and type "ipconfig" to get IP on Windows systems - any listed address next to "IPv4 Address" should work.\
-Edit the client main file on the auxiliary system - set line 8 SERVER_IP to the known IP address.\
-Set the name of the auxiliary client using line 6 clientid - ensure this is different to the server's line 5 clientid.\
+Edit the client config on the auxiliary system - set host setting to the known IP address.\
+Set the name of the auxiliary client using config file clientid - ensure this is different to the server's config file clientid.\
 Run the client main - this should automatically connect to the server main and act as a separate point of service.
 
 # Connecting multiple clients
 This is the same process as connecting one client - ensure all clients (including the server itself) have a different ID. The amount of clients that can be connected to a server is untested past 2 clients and one server, so mileage may vary.
+
+# Config file
+ClientID - Unique identifier of the server and all clients. Ensure all are different. Can be any string.
+Port - Port on the computer running server main. Usually 2106 which should work fine. can be any number 0 through 65535, but Google the chosen port first to avoid commonly reserved ports.
+Host - IP address of computer running server main. Should be set to 0.0.0.0 on the server config file. Takes any string but will crash if string is not a valid IP address (int.int.int.int). See connecting one client to find IP.
+TerminateScan - The signal inputted at the end of a barcode being scanned - usually return for most USB scanners but may differ. Takes keyboard input names surrounded by < and >.
+ScanTime - The max amount of time a scan can take before the field is cleared to avoid misinputs. Usually 0.5 but will take any decimal or whole number. Use large number such as 99999 to disable.
 
 # How to use
 There are 9 main functions of GannonPOS - Scan, Clear, Check, Search, Edit, New, Sale, Stock and Total\
