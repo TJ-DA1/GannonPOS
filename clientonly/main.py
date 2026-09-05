@@ -182,7 +182,7 @@ def on_closing():
     send_to_server({"clientid": clientid,"id": "disconnect","data": "","return": False})
     root.destroy()
 
-logtext = f"{time.strftime("%H %M %S").replace(' ', ':')} | Welcome to GannonPOS terminal | Session identifier = {clientid}\n"
+logtext = f"{time.strftime("%H %M %S").replace(' ', ':')} | GannonPOS terminal | Session identifier = {clientid}\n"
 root.title(f"GannonPOS Client")
 barcodeentry.bind(config["terminatescan"], onscan)
 root.bind("<Escape>", clearqueue)

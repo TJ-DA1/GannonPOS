@@ -197,7 +197,7 @@ def clearqueue(event):
     itemqueue = []
 
 root.title(f"GannonPOS ClientServer Hybrid")
-logtext = f"{time.strftime("%H %M %S").replace(' ', ':')} | Welcome to GannonPOS terminal | Server session identifier = {clientid}\n"
+logtext = f"{time.strftime("%H %M %S").replace(' ', ':')} | GannonPOS terminal | Server session identifier = {clientid}\n"
 barcodeentry.bind(config["terminatescan"], onscan)
 root.bind("<Escape>", clearqueue)
 root.bind('<Key>', startscan)
