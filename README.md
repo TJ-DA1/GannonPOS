@@ -24,10 +24,10 @@ Run the client main - this should automatically connect to the server main and a
 This is the same process as connecting one client - ensure all clients (including the server itself) have a different ID. The amount of clients that can be connected to a server is untested past 2 clients and one server, so mileage may vary.
 
 # Config file
-ClientID - Unique identifier of the server and all clients. Ensure all are different. Can be any string.
-Port - Port on the computer running server main. Usually 2106 which should work fine. can be any number 0 through 65535, but Google the chosen port first to avoid commonly reserved ports.
-Host - IP address of computer running server main. Should be set to 0.0.0.0 on the server config file. Takes any string but will crash if string is not a valid IP address (int.int.int.int). See connecting one client to find IP.
-TerminateScan - The signal inputted at the end of a barcode being scanned - usually return for most USB scanners but may differ. Takes keyboard input names surrounded by < and >.
+ClientID - Unique identifier of the server and all clients. Ensure all are different. Can be any string.\
+Port - Port on the computer running server main. Usually 2106 which should work fine. can be any number 0 through 65535, but Google the chosen port first to avoid commonly reserved ports.\
+Host - IP address of computer running server main. Should be set to 0.0.0.0 on the server config file. Takes any string but will crash if string is not a valid IP address (int.int.int.int). See connecting one client to find IP.\
+TerminateScan - The signal inputted at the end of a barcode being scanned - usually return for most USB scanners but may differ. Takes keyboard input names surrounded by < and >.\
 ScanTime - The max amount of time a scan can take before the field is cleared to avoid misinputs. Usually 0.5 but will take any decimal or whole number. Use large number such as 99999 to disable.
 
 # How to use
