@@ -2,13 +2,32 @@ import tkinter as tk
 import time
 from datetime import date
 from app import *
-clientid = "SHOP1"
+import os
+import json
+with open('config.json', 'r') as f:
+   config = json.load(f)
+
+clientid = config["clientid"]
 
 #Database code
 #Data base of product is stored as table of name, price, quantity, company, barcodeid
+dbexists = os.path.exists("product.db")
 import sqlite3
 product = sqlite3.connect("product.db")
 cur = product.cursor()
+if not dbexists:
+    cur.execute("CREATE TABLE product (name, price float, quantity int, company, barcodeid)")
+
+#Ensure folders available
+if os.path.isdir("sales"):
+    pass
+else:
+	os.makedirs("sales")
+
+if os.path.isdir("lists"):
+	pass
+else:
+	os.makedirs("lists")
 
 def makesale(data):
     global cur, product
@@ -80,7 +99,7 @@ def checkitem(data, clientid):
 #Client code
 #Under a TCP connection can run independently of main code, adding items to event queue over connection
 
-scantime = 0.5
+scantime = config["scantime"]
 keytime = time.time()
 newitemdata = []
 itemqueue = []
@@ -179,7 +198,7 @@ def clearqueue(event):
 
 root.title(f"GannonPOS ClientServer Hybrid")
 logtext = f"{time.strftime("%H %M %S").replace(' ', ':')} | Welcome to GannonPOS terminal | Server session identifier = {clientid}\n"
-barcodeentry.bind("<Return>", onscan)
+barcodeentry.bind(config["terminatescan"], onscan)
 root.bind("<Escape>", clearqueue)
 root.bind('<Key>', startscan)
 
@@ -194,8 +213,8 @@ logwindow.insert(tk.END, logtext)
 #Event queue follows clientid, id, data in FIFO system
 import socket, threading, json
 
-HOST = "0.0.0.0"
-PORT = 2106
+HOST = config["host"]
+PORT = config["port"]
 eventqueue = []
 lock = threading.Lock()
 

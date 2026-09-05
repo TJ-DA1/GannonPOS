@@ -3,10 +3,13 @@ import time
 import socket
 import json
 from app import *
-clientid = "SHOP2"
 
-SERVER_IP = "0.0.0.0"
-PORT = 2106
+with open('config.json', 'r') as f:
+   config = json.load(f)
+
+clientid = config["clientid"]
+SERVER_IP = config["host"]
+PORT = config["port"]
 
 def send_to_server(event):
     try:
@@ -29,7 +32,7 @@ def send_to_server(event):
 #Client code
 #Under a TCP connection can run independently of main code, adding items to event queue over connection
 
-scantime = 0.5
+scantime = config["scantime"]
 keytime = time.time()
 newitemdata = []
 itemqueue = []
@@ -177,7 +180,7 @@ def clearqueue(event):
 
 logtext = f"{time.strftime("%H %M %S").replace(' ', ':')} | Welcome to GannonPOS terminal | Session identifier = {clientid}\n"
 root.title(f"GannonPOS Client")
-barcodeentry.bind("<Return>", onscan)
+barcodeentry.bind(config["terminatescan"], onscan)
 root.bind("<Escape>", clearqueue)
 root.bind('<Key>', startscan)
 
