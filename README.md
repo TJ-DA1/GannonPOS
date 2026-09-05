@@ -16,7 +16,7 @@ The server main can be used without any clients at all as a single point of serv
 This project should not be used if the sales are confidential in anyway as the data is not encrypted at all during transfer.
 
 # Connecting one client
-Run the server main on a computer with a known IP address on a LAN (typically on the same Wi-Fi connection or connected to the same router) with the client. Open command prompt and type "ipconfig" to get IP - any listed address next to "IPv4 Address" should work.\
+Run the server main on a computer with a known IP address on a LAN (typically on the same Wi-Fi connection or connected to the same router) with the client. Open command prompt and type "ipconfig" to get IP on Windows systems - any listed address next to "IPv4 Address" should work.\
 Edit the client main file on the auxiliary system - set line 8 SERVER_IP to the known IP address.\
 Set the name of the auxiliary client using line 6 clientid - ensure this is different to the server's line 5 clientid.\
 Run the client main - this should automatically connect to the server main and act as a separate point of service.
