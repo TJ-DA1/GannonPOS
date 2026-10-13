@@ -41,8 +41,8 @@ def onmakesale():
     global itemqueue
     done = []
     if not searchable:
-        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | INFO | No items have been scanned\n","info")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | INFO | No items have been scanned\n","info")
+        
         return
 
     for i in itemqueue[::-1]:
@@ -57,24 +57,24 @@ def onmakesale():
             })
 
             if response:
-                logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | SALE | Sold {num} of item {i[0]}\n")
-                logwindow.see(tk.END)
+                log(f"{time.strftime("%H:%M:%S")} | SALE | Sold {num} of item {i[0]}\n")
+                
             else:
-                logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | ERROR | Item {i[0]} not found in database\n","error")
-                logwindow.see(tk.END)
+                log(f"{time.strftime("%H:%M:%S")} | ERROR | Item {i[0]} not found in database\n","error")
+                
     itemqueue = []
 
 def onitem():
     global values, eventqueue, itemqueue, writable
 
     if not writable:
-        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | INFO | Provided data is invalid\n","info")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | INFO | Provided data is invalid\n","info")
+        
         return
 
     elif not searchable:
-        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | INFO | No items have been scanned\n","info")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | INFO | No items have been scanned\n","info")
+        
         return
 
     values.append(itemqueue[-1][0])
@@ -86,11 +86,11 @@ def onitem():
         "return": True
     })
     if response[1]:
-        logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | ITEM | Updated item {response[0][-1]}: {tuple(response[0][:-2])}\n")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | ITEM | Updated item {response[0][-1]}: {list(response[0][:-2])}\n")
+        
     else:
-        logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | ITEM | Created new item {response[0][-1]}: {tuple(response[0][:-1])}\n")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | ITEM | Created new item {response[0][-1]}: {list(response[0][:-1])}\n")
+        
         
     itemqueue = itemqueue[:-1]
     nameentry.delete(0, tk.END)
@@ -102,8 +102,8 @@ def onaddstock():
     global itemqueue
     done = []
     if not searchable:
-        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | INFO | No items have been scanned\n","info")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | INFO | No items have been scanned\n","info")
+        
         return
 
     for i in itemqueue[::-1]:
@@ -118,19 +118,19 @@ def onaddstock():
             })
 
             if response:
-                logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | STOCK | Added {num} of item {i[0]}\n")
-                logwindow.see(tk.END)
+                log(f"{time.strftime("%H:%M:%S")} | STOCK | Added {num} of item {i[0]}\n")
+                
             else:
-                logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | ERROR | Item {i[0]} not found in database\n","error")
-                logwindow.see(tk.END)
+                log(f"{time.strftime("%H:%M:%S")} | ERROR | Item {i[0]} not found in database\n","error")
+                
     itemqueue = []
 
 def onsearchitem():
     global itemqueue
 
     if not searchable:
-        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | INFO | No items have been scanned\n","info")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | INFO | No items have been scanned\n","info")
+        
         return
 
     response = send_to_server({
@@ -140,21 +140,21 @@ def onsearchitem():
         "return": True
     })
 
-    if response[1]:  # response[1] is the product tuple
+    if response:  # response is the product tuple
         nameentry.delete(0, tk.END)
         priceentry.delete(0, tk.END)
         quantityentry.delete(0, tk.END)
         companyentry.delete(0, tk.END)
 
-        nameentry.insert(0, response[1][0])
-        priceentry.insert(0, response[1][1])
-        quantityentry.insert(0, response[1][2])
-        companyentry.insert(0, response[1][3])
-        logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | SEARCH | Fetched item {itemqueue[-1][0]}: {tuple(response[1][:-1])}\n")
-        logwindow.see(tk.END)
+        nameentry.insert(0, response[0])
+        priceentry.insert(0, response[1])
+        quantityentry.insert(0, response[2])
+        companyentry.insert(0, response[3])
+        log(f"{time.strftime("%H:%M:%S")} | SEARCH | Fetched item {itemqueue[-1][0]}: {list(response[:-1])}\n")
+        
     else:
-        logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | ERROR | Item {itemqueue[-1][0]} not found in database\n", "error")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | ERROR | Item {itemqueue[-1][0]} not found in database\n", "error")
+        
     itemqueue = itemqueue[:-1]
 
 def onscan(event):
@@ -177,12 +177,16 @@ def startscan(event):
 def clearqueue(event):
     global itemqueue
     itemqueue = []
+    
+def log(message, tag = None):
+    logwindow.insert(tk.END, message, tag)
+    logwindow.see(tk.END)
 
 def on_closing():
     send_to_server({"clientid": clientid,"id": "disconnect","data": "","return": False})
     root.destroy()
 
-logtext = f"{time.strftime("%H %M %S").replace(' ', ':')} | GannonPOS terminal | Session identifier = {clientid}\n"
+logtext = f"{time.strftime("%H:%M:%S")} | GannonPOS terminal | Session identifier = {clientid}\n"
 root.title(f"GannonPOS Client")
 barcodeentry.bind(config["terminatescan"], onscan)
 root.bind("<Escape>", clearqueue)
@@ -193,7 +197,7 @@ additembutton.configure(command = onitem)
 addstockbutton.configure(command = onaddstock)
 searchitembutton.configure(command = onsearchitem)
 
-logwindow.insert(tk.END, logtext)
+log(logtext)
 
 connected = send_to_server({"clientid": clientid,
                             "id": "connect",
@@ -201,8 +205,8 @@ connected = send_to_server({"clientid": clientid,
                             "return": True
                             })
 
-logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | SERVER | Connected to server | Server identifier {connected[1]}\n", "client")
-logwindow.see(tk.END)
+log(f"{time.strftime("%H:%M:%S")} | SERVER | Connected to server | Server identifier {connected[1]}\n", "client")
+
 
 def update_loop():
     global searchable, writable, values

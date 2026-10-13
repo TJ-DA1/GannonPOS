@@ -4,6 +4,8 @@ from datetime import date
 from app import *
 import os
 import json
+import sqlite3
+import socket, threading
 with open('config.json', 'r') as f:
    config = json.load(f)
 
@@ -12,49 +14,39 @@ clientid = config["clientid"]
 #Database code
 #Data base of product is stored as table of name, price, quantity, company, barcodeid
 dbexists = os.path.exists("product.db")
-import sqlite3
 product = sqlite3.connect("product.db")
 cur = product.cursor()
 if not dbexists:
     cur.execute("CREATE TABLE product (name, price float, quantity int, company, barcodeid)")
 
 #Ensure folders available
-if os.path.isdir("sales"):
-    pass
-else:
-	os.makedirs("sales")
-
-if os.path.isdir("lists"):
-	pass
-else:
-	os.makedirs("lists")
+os.makedirs("sales", exist_ok=True)
+os.makedirs("lists", exist_ok=True)
 
 def makesale(data):
-    global cur, product
     get = cur.execute("SELECT * FROM product WHERE barcodeid=?", (data[0],))
     row = get.fetchone()
     if row:
-        cur.execute(f"UPDATE product SET quantity = quantity - ? WHERE barcodeid = ?", (data[1], data[0],))
-        get = cur.execute(f"SELECT name, company, quantity, price FROM product WHERE barcodeid=? AND quantity < 1", (data[0],))
+        cur.execute("UPDATE product SET quantity = quantity - ? WHERE barcodeid = ?", (data[1], data[0],))
+        get = cur.execute("SELECT name, company, quantity, price FROM product WHERE barcodeid=? AND quantity < 1", (data[0],))
         product.commit()
         row = get.fetchone()
         if row is not None:
             with open(f"lists/{date.today()}.txt", "a") as o:
                 o.write(str(row)[1:-1].replace("\'","") + "\n")
 
-        get = cur.execute(f"SELECT name, company, price FROM product WHERE barcodeid=?", (data[0],))
+        get = cur.execute("SELECT name, company, price FROM product WHERE barcodeid=?", (data[0],))
         row = get.fetchone()
         with open(f"sales/{date.today()}.txt", "a") as o:
             o.write(str(row)[1:-1].replace("\'", "") + f" ({data[1]})" + "\n")
-
         return True
 
     else:
         return False
 
 def item(data):
-    global cur, product, itemqueue
-    get = cur.execute(f"SELECT * FROM product WHERE barcodeid=?", (data[4],))
+    global itemqueue
+    get = cur.execute("SELECT * FROM product WHERE barcodeid=?", (data[4],))
 
     if get.fetchone() is None:
 
@@ -74,7 +66,6 @@ def item(data):
         return data, True
 
 def addstock(data):
-    global cur, product
     get = cur.execute("SELECT * FROM product WHERE barcodeid=?", (data[0],))
     row = get.fetchone()
     if row:
@@ -84,17 +75,15 @@ def addstock(data):
     else:
         return False
 
-def searchitem(data, clientid):
-    global cur
+def searchitem(data):
     get = cur.execute("SELECT * FROM product WHERE barcodeid=?", (data,))
     row = get.fetchone()
-    return clientid, row
+    return row
 
-def checkitem(data, clientid):
-    global cur
+def checkitem(data):
     get = cur.execute("SELECT price FROM product WHERE barcodeid=?", (data,))
     row = get.fetchone()
-    return clientid, bool(row), row
+    return bool(row), row
 
 #Client code
 #Under a TCP connection can run independently of main code, adding items to event queue over connection
@@ -108,8 +97,8 @@ def onmakesale():
     global itemqueue, eventqueue
     done = []
     if len(itemqueue) == 0:
-        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | INFO | No items have been scanned\n","info")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | INFO | No items have been scanned\n","info")
+        return
 
     for i in itemqueue[::-1]:
         if i not in done:
@@ -126,13 +115,11 @@ def onitem():
     global values, eventqueue, itemqueue, writable
 
     if not writable:
-        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | INFO | Provided data is invalid\n","info")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | INFO | Provided data is invalid\n","info")
         return
 
     elif not searchable:
-        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | INFO | No items have been scanned\n","info")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | INFO | No items have been scanned\n","info")
         return
 
     values.append(itemqueue[-1][0])
@@ -152,8 +139,8 @@ def onaddstock():
     global itemqueue, eventqueue
     done = []
     if not searchable:
-        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | INFO | No items have been scanned\n","info")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | INFO | No items have been scanned\n","info")
+        return
 
     for i in itemqueue[::-1]:
         if i not in done:
@@ -169,8 +156,7 @@ def onaddstock():
 def onsearchitem():
     global itemqueue, searchable
     if not searchable:
-        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | INFO | No items have been scanned\n", "info")
-        logwindow.see(tk.END)
+        log(f"{time.strftime("%H:%M:%S")} | INFO | No items have been scanned\n", "info")
         return
     eventqueue.append({
         "clientid": clientid,
@@ -184,8 +170,8 @@ def onscan(event):
     barcode = barcodeentry.get()
     if barcode.replace(" ", "") == "":
         return
-    check = checkitem(barcode, clientid)
-    itemqueue.insert(0, (barcode, check[1], check[2]))
+    check = checkitem(barcode)
+    itemqueue.insert(0, (barcode, check[1]))
     barcodeentry.delete(0, tk.END)
 
 def startscan(event):
@@ -196,8 +182,12 @@ def clearqueue(event):
     global itemqueue
     itemqueue = []
 
+def log(message, tag = None):
+    logwindow.insert(tk.END, message, tag)
+    logwindow.see(tk.END)
+
 root.title(f"GannonPOS ClientServer Hybrid")
-logtext = f"{time.strftime("%H %M %S").replace(' ', ':')} | GannonPOS terminal | Server session identifier = {clientid}\n"
+logtext = f"{time.strftime("%H:%M:%S")} | GannonPOS terminal | Server session identifier = {clientid}\n"
 barcodeentry.bind(config["terminatescan"], onscan)
 root.bind("<Escape>", clearqueue)
 root.bind('<Key>', startscan)
@@ -207,12 +197,10 @@ additembutton.configure(command = onitem)
 addstockbutton.configure(command = onaddstock)
 searchitembutton.configure(command = onsearchitem)
 
-logwindow.insert(tk.END, logtext)
+log(logtext)
 
 #Server code
 #Event queue follows clientid, id, data in FIFO system
-import socket, threading, json
-
 HOST = config["host"]
 PORT = config["port"]
 eventqueue = []
@@ -255,8 +243,13 @@ def listen():
         except BlockingIOError:
             pass
 
+def returntoserver(event, out):
+    with lock:
+        response[event["clientid"]] = out
+        if event["clientid"] in response_events:
+            response_events[event["clientid"]].set()
 
-listener = threading.Thread(target=listen, daemon=True).start()
+(listener := threading.Thread(target=listen, daemon=True)).start()
 
 def update_loop():
     global searchable, writable, eventqueue, response, response_events, values
@@ -268,7 +261,7 @@ def update_loop():
         done = []
         for i in itemqueue:
             if i[1]:
-                price += i[2][0]
+                price += i[1][0]
 
             if i not in done:
                 num = itemqueue.count(i)
@@ -300,16 +293,12 @@ def update_loop():
 
     for event in events_to_process:
         if (event["clientid"] != clientid) and (event["id"] not in ["connect", "disconnect"]):
-            logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | CLIENT | Client {event["clientid"]} made a {str(event["id"]).upper()} request\n","client")
-            logwindow.see(tk.END)
+            log(f"{time.strftime("%H:%M:%S")} | CLIENT | Client {event["clientid"]} made a {str(event["id"]).upper()} request\n","client")
 
         match event["id"]:
             case "check":
-                out = checkitem(event["data"], event["clientid"])
-                with lock:
-                    response[event["clientid"]] = out[1], out[2]
-                    if event["clientid"] in response_events:
-                        response_events[event["clientid"]].set()
+                out = checkitem(event["data"])
+                returntoserver(event, out)
 
             case "sale":
                 #Takes "data", barcode id to decrement by one
@@ -317,39 +306,25 @@ def update_loop():
                 out = makesale(event["data"])
                 if event["clientid"] == clientid:
                     if out:
-                        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | SALE | Sold {event["data"][1]} of item {event["data"][0]}\n")
-                        logwindow.see(tk.END)
+                        log(f"{time.strftime("%H:%M:%S")} | SALE | Sold {event["data"][1]} of item {event["data"][0]}\n")
                     else:
-                        logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | ERROR | Item {event["data"][0]} not found in database\n","error")
-                        logwindow.see(tk.END)
+                        log(f"{time.strftime("%H:%M:%S")} | ERROR | Item {event["data"][0]} not found in database\n","error")
                 else:
-                    with lock:
-                        response[event["clientid"]] = out
-                        if event["clientid"] in response_events:
-                            response_events[event["clientid"]].set()
+                    returntoserver(event, out)
 
             case "item":
                 #Takes "data", consisting of a list of all attributes of new / updated entry
                 out = item(event["data"])
                 if out[1]:
                     if event["clientid"] == clientid:
-                        logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | ITEM | Updated item {out[0][-1]}: {tuple(out[0][:-2])}\n")
-                        logwindow.see(tk.END)
+                        log(f"{time.strftime("%H:%M:%S")} | ITEM | Updated item {out[0][-1]}: {list(out[0][:-2])}\n")
                     else:
-                        with lock:
-                            response[event["clientid"]] = out
-                            if event["clientid"] in response_events:
-                                response_events[event["clientid"]].set()
+                        returntoserver(event, out)
                 else:
                     if event["clientid"] == clientid:
-                        logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | ITEM | Created new item {out[0][-1]}: {tuple(out[0][:-1])}\n")
-                        logwindow.see(tk.END)
+                        log(f"{time.strftime("%H:%M:%S")} | ITEM | Created new item {out[0][-1]}: {list(out[0][:-1])}\n")
                     else:
-                        with lock:
-                            response[event["clientid"]] = out
-                            if event["clientid"] in response_events:
-                                response_events[event["clientid"]].set()
-
+                        returntoserver(event, out)
 
             case "stock":
                 # Takes "data", barcode id to increment by one
@@ -357,54 +332,39 @@ def update_loop():
                 out = addstock(event["data"])
                 if event["clientid"] == clientid:
                     if out:
-                        logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | STOCK | Added {event["data"][1]} of item {event["data"][0]}\n")
-                        logwindow.see(tk.END)
+                        log(f"{time.strftime("%H:%M:%S")} | STOCK | Added {event["data"][1]} of item {event["data"][0]}\n")
                     else:
-                       logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | ERROR | Item {event["data"][0]} not found in database\n", "error")
-                       logwindow.see(tk.END)
+                       log(f"{time.strftime("%H:%M:%S")} | ERROR | Item {event["data"][0]} not found in database\n", "error")
                 else:
-                    with lock:
-                        response[event["clientid"]] = out
-                        if event["clientid"] in response_events:
-                            response_events[event["clientid"]].set()
+                    returntoserver(event, out)
 
             case "search":
                 #Takes "data" as a barcode id, returning info on the product
-                result = searchitem(event["data"], event["clientid"])
-                if result[0] == clientid:
-                    if result[1]:
+                result = searchitem(event["data"])
+                if event["clientid"] == clientid:
+                    if result:
                         nameentry.delete(0, tk.END)
                         priceentry.delete(0, tk.END)
                         quantityentry.delete(0, tk.END)
                         companyentry.delete(0, tk.END)
 
-                        nameentry.insert(0, result[1][0])
-                        priceentry.insert(0, result[1][1])
-                        quantityentry.insert(0, result[1][2])
-                        companyentry.insert(0, result[1][3])
+                        nameentry.insert(0, result[0])
+                        priceentry.insert(0, result[1])
+                        quantityentry.insert(0, result[2])
+                        companyentry.insert(0, result[3])
 
-                        logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | SEARCH | Fetched item {event["data"]}: {result[1][:-1]}\n")
-                        logwindow.see(tk.END)
+                        log(f"{time.strftime("%H:%M:%S")} | SEARCH | Fetched item {event["data"]}: {list(result[:-1])}\n")
                     else:
-                        logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | ERROR | Item {event["data"]} not found in database\n", "error")
-                        logwindow.see(tk.END)
+                        log(f"{time.strftime("%H:%M:%S")} | ERROR | Item {event["data"]} not found in database\n", "error")
                 else:
-                    with lock:
-                        response[event["clientid"]] = result
-                        if event["clientid"] in response_events:
-                            response_events[event["clientid"]].set()
+                    returntoserver(event, result)
 
             case "connect":
-                logwindow.insert(tk.END, f"{time.strftime("%H %M %S").replace(' ', ':')} | CLIENT | Client connected | Client identifier {event["clientid"]}\n", "client")
-                logwindow.see(tk.END)
-                with lock:
-                    response[event["clientid"]] = [True, clientid]
-                    if event["clientid"] in response_events:
-                        response_events[event["clientid"]].set()
+                log(f"{time.strftime("%H:%M:%S")} | CLIENT | Client connected | Client identifier {event["clientid"]}\n", "client")
+                returntoserver(event, [True, clientid])
 
             case "disconnect":
-                logwindow.insert(tk.END,f"{time.strftime("%H %M %S").replace(' ', ':')} | CLIENT | Client disconnected | Client identifier {event["clientid"]}\n","client")
-                logwindow.see(tk.END)
+                log(f"{time.strftime("%H:%M:%S")} | CLIENT | Client disconnected | Client identifier {event["clientid"]}\n","client")
 
     root.after(50, update_loop)
 
